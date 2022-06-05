@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "wolfeidau: aws billing clean up infrastructure"
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Application Name used to store configuration.
+  Stage:
+    Type: String
+    Description: The stage where the stac is running in, e.g., dev, prod.
+    Default: dev
+  Branch:
+    Type: String
+    Description: The branch the stack was deployed.
+    Default: master
+  Commit:
+    Type: String
+
+Globals:
+  Function:
+    Runtime: go1.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        BRANCH: !Ref Branch
+        LOG_LEVEL: !Ref LogLevel
+        COMMIT: !Ref Commit
+        AWS_ACCOUNT_ID: !Ref "AWS::AccountId"
+        RAW_EVENT_LOGGING: !If [IsDev, "true", "false"]
+
+Resources:
+  BackendFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${BackendFunction}"
+      RetentionInDays: !If [IsProd, 365, 14]
+
+  BackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../dist/handler.zip
+      Handler: cleanup-curs-lambda
