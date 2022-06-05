@@ -62,7 +62,7 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 	}
 
 	// at the moment we skip snapshot manifests
-	if manifestPeriod.Snapshot == "" {
+	if manifestPeriod.Snapshot != "" {
 		log.Ctx(ctx).Info().Str("object", created.Object.Key).Msg("skipped file as it is a snapshot manifest")
 		return []byte(`{"msg": "skipped"}`), nil
 	}
@@ -93,7 +93,7 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 
 	// update the hive structure for athena
 
-	key := fmt.Sprintf("%s/year=%d/month=%d,day=%d/symlink.txt", manifestPeriod.Prefix, startDate.Year(), startDate.Month(), startDate.Day())
+	key := fmt.Sprintf("hive/year=%d/month=%d/symlink.txt", startDate.Year(), startDate.Month())
 
 	buf := bytes.NewBufferString(strings.Join(manifest.ReportKeys, "\n"))
 
