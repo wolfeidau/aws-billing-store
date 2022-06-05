@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
+	"time"
 )
 
 var (
@@ -21,18 +22,22 @@ type BillingPeriod struct {
 	End   string `json:"end"`
 }
 
+func (bp *BillingPeriod) StartTime() (time.Time, error) {
+	return time.Parse("20060102T150405.999Z07:00", bp.Start)
+}
+
 type Manifest struct {
-	AssemblyID    string        `json:"assemblyId"`
-	Account       string        `json:"account"`
-	Columns       []Column      `json:"columns"`
-	Charset       string        `json:"charset"`
-	Compression   string        `json:"compression"`
-	ContentType   string        `json:"contentType"`
-	ReportID      string        `json:"reportId"`
-	ReportName    string        `json:"reportName"`
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
-	Bucket        string        `json:"bucket"`
-	ReportKeys    []string      `json:"reportKeys"`
+	AssemblyID    string         `json:"assemblyId"`
+	Account       string         `json:"account"`
+	Columns       []*Column      `json:"columns"`
+	Charset       string         `json:"charset"`
+	Compression   string         `json:"compression"`
+	ContentType   string         `json:"contentType"`
+	ReportID      string         `json:"reportId"`
+	ReportName    string         `json:"reportName"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod"`
+	Bucket        string         `json:"bucket"`
+	ReportKeys    []string       `json:"reportKeys"`
 }
 
 func ParseManifest(rdr io.Reader) (*Manifest, error) {

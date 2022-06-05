@@ -1,4 +1,4 @@
-APPNAME := aws-apilatency
+APPNAME := aws-billing-service
 STAGE ?= dev
 BRANCH ?= master
 
@@ -21,7 +21,26 @@ test:
 build:
 	CGO_ENABLED=0 GOAMD64=v2 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/ ./cmd/...
 
+.PHONY: clean
+clean:
+	rm -rf dist
+
 .PHONY: archive
 archive:
 	@echo "--- build an archive"
 	@cd dist && zip -X -9 ./handler.zip *-lambda
+
+.PHONY: deploy-symlink
+deploy-symlink:
+	@echo "--- deploy stack $(APPNAME)-$(STAGE)-$(BRANCH)-symlink"
+	$(eval SAM_BUCKET := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/deploy_bucket' --query 'Parameter.Value' --output text))
+
+	@sam deploy \
+		--no-fail-on-empty-changeset \
+		--template-file sam/app/symlink.yaml \
+		--capabilities CAPABILITY_IAM \
+		--s3-bucket $(SAM_BUCKET) \
+		--s3-prefix sam/$(GIT_HASH) \
+		--tags "environment=$(STAGE)" "branch=$(BRANCH)" "service=$(APPNAME)" \
+		--stack-name $(APPNAME)-$(STAGE)-$(BRANCH)-symlink \
+		--parameter-overrides AppName=$(APPNAME) Stage=$(STAGE) Branch=$(BRANCH) Commit=$(GIT_HASH) DataBucketName=$(DATA_BUCKET_NAME)

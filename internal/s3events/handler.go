@@ -1,9 +1,12 @@
 package s3events
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -82,6 +85,28 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 	}
 
 	log.Ctx(ctx).Info().Str("AssemblyID", manifest.AssemblyID).Msg("loaded manifest")
+
+	startDate, err := manifest.BillingPeriod.StartTime()
+	if err != nil {
+		return nil, err
+	}
+
+	// update the hive structure for athena
+
+	key := fmt.Sprintf("%s/year=%d/month=%d,day=%d/symlink.txt", manifestPeriod.Prefix, startDate.Year(), startDate.Month(), startDate.Day())
+
+	buf := bytes.NewBufferString(strings.Join(manifest.ReportKeys, "\n"))
+
+	putRes, err := h.s3client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(created.Bucket.Name),
+		Key:    aws.String(key),
+		Body:   buf,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	log.Ctx(ctx).Info().Str("key", key).Str("id", aws.ToString(putRes.ChecksumSHA256)).Msg("updated symlink")
 
 	return []byte(`{"msg": "ok"}`), nil
 }

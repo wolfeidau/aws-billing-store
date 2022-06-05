@@ -6,9 +6,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/wolfeidau/aws-billing-service/internal/flags"
+	"github.com/wolfeidau/aws-billing-service/internal/s3events"
 	lmw "github.com/wolfeidau/lambda-go-extras/middleware"
 	"github.com/wolfeidau/lambda-go-extras/middleware/raw"
 	zlog "github.com/wolfeidau/lambda-go-extras/middleware/zerolog"
@@ -34,15 +34,15 @@ func main() {
 		}).Msg("startup")
 	}
 
+	h, err := s3events.NewHandler(context.Background(), cli)
+	if err != nil {
+		log.Fatal().Err(err).Msg("handler setup failed")
+	}
+
 	ch := lmw.New(
 		raw.New(raw.Fields(flds)),   // raw event logger primarily used during development
 		zlog.New(zlog.Fields(flds)), // inject zerolog into the context
-	).ThenFunc(processEvent)
+	).Then(h)
 
 	lambda.Start(ch)
-}
-
-func processEvent(ctx context.Context, payload []byte) ([]byte, error) {
-	zerolog.Ctx(ctx).Info().Msg("processEvent")
-	return []byte("ok"), nil
 }

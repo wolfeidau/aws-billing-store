@@ -5,6 +5,7 @@ import (
 	"io"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -99,7 +100,7 @@ func TestParseManifest(t *testing.T) {
 			want: &Manifest{
 				AssemblyID: "20220503T120125Z",
 				Account:    "121212121212",
-				Columns: []Column{
+				Columns: []*Column{
 					{Category: "identity", Name: "identity_line_item_id", Type: "STRING"},
 				},
 				Charset:     "UTF-8",
@@ -107,7 +108,7 @@ func TestParseManifest(t *testing.T) {
 				ContentType: "Parquet",
 				ReportID:    "abc123",
 				ReportName:  "test-managment-cur",
-				BillingPeriod: BillingPeriod{
+				BillingPeriod: &BillingPeriod{
 					Start: "20220401T000000.000Z",
 					End:   "20220501T000000.000Z",
 				},
@@ -128,6 +129,42 @@ func TestParseManifest(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseManifest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBillingPeriod_StartTime(t *testing.T) {
+	type fields struct {
+		Start string
+		End   string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    time.Time
+		wantErr bool
+	}{
+		{
+			name:    "should parse valid start date",
+			fields:  fields{Start: "20220501T000000.000Z"},
+			want:    time.Date(2022, 5, 1, 0, 0, 0, 0, time.UTC),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bp := &BillingPeriod{
+				Start: tt.fields.Start,
+				End:   tt.fields.End,
+			}
+			got, err := bp.StartTime()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BillingPeriod.StartTime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BillingPeriod.StartTime() = %v, want %v", got, tt.want)
 			}
 		})
 	}

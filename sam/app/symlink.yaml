@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: "wolfeidau: aws billing clean up infrastructure"
+Description: "wolfeidau: aws billing symlink lambda which maintains the hive structure using symlinks for Athena"
 
 Parameters:
   AppName:
@@ -45,14 +45,17 @@ Resources:
   BackendFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${BackendFunction}"
+      LogGroupName: !Sub "/aws/lambda/${SymlinkFunction}"
       RetentionInDays: !If [IsProd, 365, 14]
 
-  BackendFunction:
+  SymlinkFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../dist/handler.zip
-      Handler: cleanup-curs-lambda
+      Handler: symlink-curs-lambda
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucketName      
       Events:
         S3EventRule:
           Type: EventBridgeRule
