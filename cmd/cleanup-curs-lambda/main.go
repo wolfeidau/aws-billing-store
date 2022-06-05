@@ -4,20 +4,27 @@ import (
 	"context"
 	"runtime/debug"
 
+	"github.com/alecthomas/kong"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/wolfeidau/aws-billing-service/internal/flags"
 	lmw "github.com/wolfeidau/lambda-go-extras/middleware"
 	"github.com/wolfeidau/lambda-go-extras/middleware/raw"
 	zlog "github.com/wolfeidau/lambda-go-extras/middleware/zerolog"
 )
 
-// assigned during build time with -ldflags
 var (
+	// assigned during build time with -ldflags
 	commit = "unknown"
+
+	cli flags.S3Events
 )
 
 func main() {
+	kong.Parse(&cli,
+		kong.Vars{"version": commit}, // bind a var for version
+	)
 
 	flds := lmw.FieldMap{"commit": commit}
 
@@ -32,7 +39,7 @@ func main() {
 		zlog.New(zlog.Fields(flds)), // inject zerolog into the context
 	).ThenFunc(processEvent)
 
-	lambda.StartHandler(ch)
+	lambda.Start(ch)
 }
 
 func processEvent(ctx context.Context, payload []byte) ([]byte, error) {

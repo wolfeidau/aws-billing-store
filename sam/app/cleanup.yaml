@@ -16,6 +16,16 @@ Parameters:
     Default: master
   Commit:
     Type: String
+  LogLevel:
+    Type: String
+    Default: info
+    AllowedValues: ["trace", "debug", "info", "warn", "error", "fatal", "panic"]
+  DataBucketName:
+    Type: String
+
+Conditions:
+  IsDev: !Equals [!Ref Stage, "dev"]
+  IsProd: !Equals [!Ref Stage, "prod"]
 
 Globals:
   Function:
@@ -43,3 +53,16 @@ Resources:
     Properties:
       CodeUri: ../../dist/handler.zip
       Handler: cleanup-curs-lambda
+      Events:
+        S3EventRule:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - "aws.s3"
+              "detail-type":
+                - "Object Created"
+              detail:
+                bucket:
+                  name:
+                    - !Ref DataBucketName
