@@ -43,4 +43,5 @@ deploy-symlink:
 		--s3-prefix sam/$(GIT_HASH) \
 		--tags "environment=$(STAGE)" "branch=$(BRANCH)" "service=$(APPNAME)" \
 		--stack-name $(APPNAME)-$(STAGE)-$(BRANCH)-symlink \
-		--parameter-overrides AppName=$(APPNAME) Stage=$(STAGE) Branch=$(BRANCH) Commit=$(GIT_HASH) DataBucketName=$(DATA_BUCKET_NAME)
+		--parameter-overrides AppName=$(APPNAME) Stage=$(STAGE) Branch=$(BRANCH) Commit=$(GIT_HASH) \
+			DataBucketName=$(DATA_BUCKET_NAME) CurPrefix=$(CUR_PREFIX)

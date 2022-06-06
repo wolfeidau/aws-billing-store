@@ -21,7 +21,11 @@ Parameters:
     Default: info
     AllowedValues: ["trace", "debug", "info", "warn", "error", "fatal", "panic"]
   DataBucketName:
+    Description: The name of the bucket you have configured to receive CUR files.
     Type: String
+  CurPrefix:
+    Type: String
+    Description: The prefix for the CUR files in the bucket, this should exclude the leading '/'.
 
 Conditions:
   IsDev: !Equals [!Ref Stage, "dev"]
@@ -69,3 +73,6 @@ Resources:
                 bucket:
                   name:
                     - !Ref DataBucketName
+                object:
+                  key:
+                    - prefix: !Ref CurPrefix

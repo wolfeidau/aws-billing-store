@@ -1,12 +1,10 @@
 package s3events
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -16,11 +14,13 @@ import (
 	"github.com/wolfeidau/aws-billing-service/internal/events"
 	"github.com/wolfeidau/aws-billing-service/internal/events/s3created"
 	"github.com/wolfeidau/aws-billing-service/internal/flags"
+	"github.com/wolfeidau/aws-billing-service/internal/hive"
 )
 
 type Handler struct {
 	cfg      flags.S3Events
 	s3client *s3.Client
+	sgen     *hive.SymlinkGenerator
 }
 
 func NewHandler(ctx context.Context, cfg flags.S3Events) (*Handler, error) {
@@ -34,6 +34,7 @@ func NewHandler(ctx context.Context, cfg flags.S3Events) (*Handler, error) {
 	return &Handler{
 		cfg:      cfg,
 		s3client: s3client,
+		sgen:     hive.NewSymlinkGenerator(s3client),
 	}, nil
 }
 
@@ -92,21 +93,15 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 	}
 
 	// update the hive structure for athena
+	hivePartitions := []string{
+		fmt.Sprintf("year=%d", startDate.Year()),
+		fmt.Sprintf("month=%d", startDate.Month()),
+	}
 
-	key := fmt.Sprintf("hive/year=%d/month=%d/symlink.txt", startDate.Year(), startDate.Month())
-
-	buf := bytes.NewBufferString(strings.Join(manifest.ReportKeys, "\n"))
-
-	putRes, err := h.s3client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(created.Bucket.Name),
-		Key:    aws.String(key),
-		Body:   buf,
-	})
+	_, err = h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, manifest.ReportKeys)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Ctx(ctx).Info().Str("key", key).Str("id", aws.ToString(putRes.ChecksumSHA256)).Msg("updated symlink")
 
 	return []byte(`{"msg": "ok"}`), nil
 }
