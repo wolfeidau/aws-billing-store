@@ -9,13 +9,21 @@ GIT_HASH := $(shell git rev-parse --short HEAD)
 .PHONY: ci
 ci: test build
 
+bin/golangci-lint: bin/golangci-lint-${GOLANGCI_VERSION}
+	@ln -sf golangci-lint-${GOLANGCI_VERSION} bin/golangci-lint
+bin/golangci-lint-${GOLANGCI_VERSION}:
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.46.2
+	@mv bin/golangci-lint $@
+
 .PHONY: lint
-lint:
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_VERSION) golangci-lint run -v
+lint: bin/golangci-lint
+	@echo "--- lint all the things"
+	@bin/golangci-lint run
 
 .PHONY: test
 test:
-	go test -v -cover ./...
+	@go test -coverprofile=coverage.txt ./... > /dev/null
+	@go tool cover -func=coverage.txt
 
 .PHONY: build
 build:
