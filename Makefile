@@ -1,4 +1,4 @@
-APPNAME := aws-billing-store
+APPNAME := aws-billing
 STAGE ?= dev
 BRANCH ?= master
 

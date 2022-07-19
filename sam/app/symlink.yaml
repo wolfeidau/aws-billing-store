@@ -41,7 +41,7 @@ Globals:
         RAW_EVENT_LOGGING: !If [IsDev, "true", "false"]
 
 Resources:
-  BackendFunctionLogGroup:
+  SymlinkFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SymlinkFunction}"
