@@ -224,6 +224,8 @@ Resources:
               Type: string
             - Name: reservation_recurring_fee_for_usage
               Type: double
+            - Name: reservation_reservation_a_r_n
+              Type: string
             - Name: reservation_start_time
               Type: string
             - Name: reservation_subscription_id
