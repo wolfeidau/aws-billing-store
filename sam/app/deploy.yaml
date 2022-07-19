@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  "wolfeidau: Cloudformation deployment infra used to host Serverless Applications Model (SAM) artifacts."
+Parameters:
+  Stage:
+    Type: String
+    Description: The stage where the application is running in, e.g., dev, prod.
+    Default: dev
+  Branch:
+    Type: String
+    Default: master
+  RetentionInDays:
+    Description:
+      Retain the assets uploaded to the deployment bucket for this many
+      days.
+    Type: Number
+    Default: 7
+
+Outputs:
+  BucketName:
+    Value:
+      Ref: Bucket
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteEverything
+            Prefix: ""
+            Status: Enabled
+            ExpirationInDays:
+              Ref: RetentionInDays
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:*
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${Bucket}/*
+              - Fn::Sub: arn:aws:s3:::${Bucket}
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  BucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Fn::Sub: /config/${Stage}/${Branch}/deploy_bucket
+      Type: String
+      Value:
+        Ref: Bucket

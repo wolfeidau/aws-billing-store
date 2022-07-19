@@ -1,4 +1,4 @@
-package s3events
+package symlink
 
 import (
 	"context"
@@ -10,20 +10,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
-	"github.com/wolfeidau/aws-billing-service/internal/cur"
-	"github.com/wolfeidau/aws-billing-service/internal/events"
-	"github.com/wolfeidau/aws-billing-service/internal/events/s3created"
-	"github.com/wolfeidau/aws-billing-service/internal/flags"
-	"github.com/wolfeidau/aws-billing-service/internal/hive"
+	"github.com/wolfeidau/aws-billing-store/internal/cur"
+	"github.com/wolfeidau/aws-billing-store/internal/events"
+	"github.com/wolfeidau/aws-billing-store/internal/events/s3created"
+	"github.com/wolfeidau/aws-billing-store/internal/hive"
 )
 
 type Handler struct {
-	cfg      flags.S3Events
 	s3client *s3.Client
 	sgen     *hive.SymlinkGenerator
 }
 
-func NewHandler(ctx context.Context, cfg flags.S3Events) (*Handler, error) {
+func NewHandler(ctx context.Context) (*Handler, error) {
 	config, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -32,7 +30,6 @@ func NewHandler(ctx context.Context, cfg flags.S3Events) (*Handler, error) {
 	s3client := s3.NewFromConfig(config)
 
 	return &Handler{
-		cfg:      cfg,
 		s3client: s3client,
 		sgen:     hive.NewSymlinkGenerator(s3client),
 	}, nil
@@ -92,13 +89,18 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		return nil, err
 	}
 
-	// update the hive structure for athena
-	hivePartitions := []string{
-		fmt.Sprintf("year=%d", startDate.Year()),
-		fmt.Sprintf("month=%d", startDate.Month()),
+	hivePartitions := hive.HivePartitions{
+		"year":  fmt.Sprintf("%d", startDate.Year()),
+		"month": fmt.Sprintf("%d", startDate.Month()),
 	}
 
-	_, err = h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, manifest.ReportKeys)
+	keys := make([]string, len(manifest.ReportKeys))
+
+	for i, reportKey := range manifest.ReportKeys {
+		keys[i] = fmt.Sprintf("s3://%s/%s", created.Bucket.Name, reportKey)
+	}
+
+	_, err = h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, keys)
 	if err != nil {
 		return nil, err
 	}

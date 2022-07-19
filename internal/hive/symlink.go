@@ -25,9 +25,9 @@ func NewSymlinkGenerator(s3client S3Client) *SymlinkGenerator {
 	}
 }
 
-func (sg *SymlinkGenerator) StoreSymlink(ctx context.Context, bucket, prefix string, hivePartitions, symlinkKeys []string) (*s3.PutObjectOutput, error) {
+func (sg *SymlinkGenerator) StoreSymlink(ctx context.Context, bucket, prefix string, hivePartitions HivePartitions, symlinkKeys []string) (*s3.PutObjectOutput, error) {
 
-	key := fmt.Sprintf("%s/hive/%s/symlink.txt", prefix, strings.Join(hivePartitions, "/"))
+	key := fmt.Sprintf("%s/hive/%s/symlink.txt", prefix, hivePartitions.PathString())
 
 	buf := bytes.NewBufferString(strings.Join(symlinkKeys, "\n"))
 

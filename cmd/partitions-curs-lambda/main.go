@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/rs/zerolog/log"
 	"github.com/wolfeidau/aws-billing-store/internal/flags"
-	"github.com/wolfeidau/aws-billing-store/internal/symlink"
+	"github.com/wolfeidau/aws-billing-store/internal/partitions"
 	lmw "github.com/wolfeidau/lambda-go-extras/middleware"
 	"github.com/wolfeidau/lambda-go-extras/middleware/raw"
 	zlog "github.com/wolfeidau/lambda-go-extras/middleware/zerolog"
@@ -18,7 +18,7 @@ var (
 	// assigned during build time with -ldflags
 	commit = "unknown"
 
-	cli flags.Symlink
+	cli flags.Partitions
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 		}).Msg("startup")
 	}
 
-	h, err := symlink.NewHandler(context.Background())
+	h, err := partitions.NewHandler(context.Background(), cli)
 	if err != nil {
 		log.Fatal().Err(err).Msg("handler setup failed")
 	}

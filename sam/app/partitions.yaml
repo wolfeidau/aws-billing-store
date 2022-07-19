@@ -1,27 +1,31 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: "wolfeidau: aws billing symlink lambda which maintains the hive structure for Athena"
+Description: "wolfeidau: aws billing partition lambda which detects new files in the CUR hive folder and creates athena partitions"
 
 Parameters:
-  AppName:
-    Type: String
-    Description: Application Name used to store configuration.
   Stage:
     Type: String
-    Description: The stage where the stac is running in, e.g., dev, prod.
+    Description: The stage where the stack is running in, e.g., dev, prod.
     Default: dev
   Branch:
     Type: String
     Description: The branch the stack was deployed.
     Default: master
-  Commit:
-    Type: String
   ReportBucketName:
     Description: The name of the bucket you have configured to receive CUR files.
     Type: String
   CurPrefix:
     Type: String
     Description: The prefix for the CUR files in the bucket, this should exclude the leading '/'.
+  Commit:
+    Type: String
+  GlueDatabase:
+    Type: String
+  GlueTable:
+    Type: String
+  QueryResultsBucketName:
+    Type: String
+
 
 Conditions:
   IsDev: !Equals [!Ref Stage, "dev"]
@@ -41,20 +45,40 @@ Globals:
         RAW_EVENT_LOGGING: !If [IsDev, "true", "false"]
 
 Resources:
-  BackendFunctionLogGroup:
+  PartitionsFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${SymlinkFunction}"
+      LogGroupName: !Sub "/aws/lambda/${PartitionsFunction}"
       RetentionInDays: !If [IsProd, 365, 14]
 
-  SymlinkFunction:
+  PartitionsFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../../dist/handler.zip
-      Handler: symlink-curs-lambda
+      Handler: partitions-curs-lambda
+      Environment:
+        Variables:
+          DATABASE: !Ref GlueDatabase
+          TABLE: !Ref GlueTable
+          QUERY_BUCKET: !Ref QueryResultsBucketName
       Policies:
-        - S3CrudPolicy:
-            BucketName: !Ref ReportBucketName      
+        - S3ReadPolicy:
+            BucketName: !Ref QueryResultsBucketName
+        - S3WritePolicy:
+            BucketName: !Ref QueryResultsBucketName
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "athena:StartQueryExecution"
+                - "athena:GetQueryExecution"
+                - "athena:GetQueryResults"
+                - "athena:GetWorkGroup"
+                - "athena:GetDatabase"
+                - "glue:BatchCreatePartition"
+                - "glue:GetTable"
+                - "glue:GetDatabase"
+              Resource: "*"    
       Events:
         S3EventRule:
           Type: EventBridgeRule
@@ -70,4 +94,4 @@ Resources:
                     - !Ref ReportBucketName
                 object:
                   key:
-                    - prefix: !Ref CurPrefix
+                    - prefix: !Sub "${CurPrefix}/hive"

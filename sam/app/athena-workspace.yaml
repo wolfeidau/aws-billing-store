@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "wolfeidau: Athena results."
+
+Parameters:
+  AppName:
+    Type: String
+    Description: The name of the application.
+
+  Stage:
+    Type: String
+    Description: The stage where the stac is running in, e.g., dev, prod.
+    Default: dev
+
+  Branch:
+    Type: String
+    Description: The branch the stack was deployed.
+    Default: master
+
+  ObjectExpirationInDays:
+    Type: Number
+    Default: 14
+
+Outputs:
+  AthenaWorkGroupName:
+    Value: !Sub ${AppName}-${Branch}-${Stage}-workgroup
+    Description: "Athena workgroup name"
+
+  QueryResultsBucketName:
+    Description: "Athena query results bucket name"
+    Value: !Ref QueryResultsBucketName
+
+Resources:
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Sub ${AppName}-${Branch}-${Stage}-workgroup
+      Description: Stax Work Group
+      WorkGroupConfiguration:
+        BytesScannedCutoffPerQuery: 10000000
+        EnforceWorkGroupConfiguration: true
+        PublishCloudWatchMetricsEnabled: true
+        ResultConfiguration:
+          EncryptionConfiguration:
+            EncryptionOption: SSE_S3
+          OutputLocation: !Sub s3://${QueryResultsBucket}/results
+
+  QueryResultsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeletionRule
+            Status: Enabled
+            ExpirationInDays: !Ref ObjectExpirationInDays
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  QueryResultsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Bucket: !Ref QueryResultsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:*
+            Resource:
+              - !Sub "arn:aws:s3:::${QueryResultsBucket}/*"
+              - !Sub "arn:aws:s3:::${QueryResultsBucket}"
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+
+  QueryResultsBucketName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/config/${Stage}/${Branch}/${AppName}/athena_query_results_bucketname"
+      Type: "String"
+      Value: !Ref QueryResultsBucket
+      Description: "Athena query results bucket name"
+
+  AthenaWorkGroupName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/config/${Stage}/${Branch}/${AppName}/athena_workgroup_name"
+      Type: "String"
+      Value: !Sub ${AppName}-${Branch}-${Stage}-workgroup
+      Description: "Athena workgroup name"
+

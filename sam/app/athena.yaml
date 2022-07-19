@@ -1,0 +1,294 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "wolfeidau: aws billing Glue database and Athena table"
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Application Name used to store configuration.
+  Stage:
+    Type: String
+    Description: The stage where the stack is running in, e.g., dev, prod.
+    Default: dev
+  Branch:
+    Type: String
+    Description: The branch the stack was deployed.
+    Default: master
+  ReportBucketName:
+    Description: The name of the bucket you have configured to receive CUR files.
+    Type: String
+  CurPrefix:
+    Type: String
+    Description: The prefix for the CUR files in the bucket, this should exclude the leading '/'.
+
+Outputs:
+  GlueDatabase:
+    Value: !Ref GlueDatabase
+  GlueTable:
+    Value: !Ref GlueTable
+
+Resources:
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Sub awsbilling_${Branch}_${Stage}
+        Description: awsbilling CUR database
+
+  GlueTable:
+    Type: AWS::Glue::Table
+    Properties:
+      DatabaseName: !Ref GlueDatabase
+      CatalogId: !Ref AWS::AccountId
+      TableInput:
+        Name: raw_cur_data
+        StorageDescriptor:
+          Columns:
+            - Name: identity_line_item_id
+              Type: string
+            - Name: identity_time_interval
+              Type: string
+            - Name: bill_invoice_id
+              Type: string
+            - Name: bill_invoicing_entity
+              Type: string
+            - Name: bill_billing_entity
+              Type: string
+            - Name: bill_bill_type
+              Type: string
+            - Name: bill_payer_account_id
+              Type: string
+            - Name: bill_billing_period_start_date
+              Type: timestamp
+            - Name: bill_billing_period_end_date
+              Type: timestamp
+            - Name: line_item_usage_account_id
+              Type: string
+            - Name: line_item_line_item_type
+              Type: string
+            - Name: line_item_usage_start_date
+              Type: timestamp
+            - Name: line_item_usage_end_date
+              Type: timestamp
+            - Name: line_item_product_code
+              Type: string
+            - Name: line_item_usage_type
+              Type: string
+            - Name: line_item_operation
+              Type: string
+            - Name: line_item_availability_zone
+              Type: string
+            - Name: line_item_resource_id
+              Type: string
+            - Name: line_item_usage_amount
+              Type: double
+            - Name: line_item_normalization_factor
+              Type: double
+            - Name: line_item_normalized_usage_amount
+              Type: double
+            - Name: line_item_currency_code
+              Type: string
+            - Name: line_item_unblended_rate
+              Type: string
+            - Name: line_item_unblended_cost
+              Type: double
+            - Name: line_item_blended_rate
+              Type: string
+            - Name: line_item_blended_cost
+              Type: double
+            - Name: line_item_line_item_description
+              Type: string
+            - Name: line_item_tax_type
+              Type: string
+            - Name: line_item_legal_entity
+              Type: string
+            - Name: product_product_name
+              Type: string
+            - Name: product_alarm_type
+              Type: string
+            - Name: product_availability
+              Type: string
+            - Name: product_ci_type
+              Type: string
+            - Name: product_description
+              Type: string
+            - Name: product_durability
+              Type: string
+            - Name: product_endpoint_type
+              Type: string
+            - Name: product_event_type
+              Type: string
+            - Name: product_fee_code
+              Type: string
+            - Name: product_fee_description
+              Type: string
+            - Name: product_from_location
+              Type: string
+            - Name: product_from_location_type
+              Type: string
+            - Name: product_from_region_code
+              Type: string
+            - Name: product_group
+              Type: string
+            - Name: product_group_description
+              Type: string
+            - Name: product_location
+              Type: string
+            - Name: product_location_type
+              Type: string
+            - Name: product_logs_destination
+              Type: string
+            - Name: product_message_delivery_frequency
+              Type: string
+            - Name: product_message_delivery_order
+              Type: string
+            - Name: product_operation
+              Type: string
+            - Name: product_platopricingtype
+              Type: string
+            - Name: product_platostoragetype
+              Type: string
+            - Name: product_platovolumetype
+              Type: string
+            - Name: product_product_family
+              Type: string
+            - Name: product_queue_type
+              Type: string
+            - Name: product_region
+              Type: string
+            - Name: product_region_code
+              Type: string
+            - Name: product_request_description
+              Type: string
+            - Name: product_request_type
+              Type: string
+            - Name: product_routing_target
+              Type: string
+            - Name: product_routing_type
+              Type: string
+            - Name: product_servicecode
+              Type: string
+            - Name: product_servicename
+              Type: string
+            - Name: product_sku
+              Type: string
+            - Name: product_storage_class
+              Type: string
+            - Name: product_storage_media
+              Type: string
+            - Name: product_storage_type
+              Type: string
+            - Name: product_tickettype
+              Type: string
+            - Name: product_to_location
+              Type: string
+            - Name: product_to_location_type
+              Type: string
+            - Name: product_to_region_code
+              Type: string
+            - Name: product_transfer_type
+              Type: string
+            - Name: product_usagetype
+              Type: string
+            - Name: product_version
+              Type: string
+            - Name: product_volume_type
+              Type: string
+            - Name: pricing_rate_code
+              Type: string
+            - Name: pricing_rate_id
+              Type: string
+            - Name: pricing_currency
+              Type: string
+            - Name: pricing_public_on_demand_cost
+              Type: double
+            - Name: pricing_public_on_demand_rate
+              Type: string
+            - Name: pricing_term
+              Type: string
+            - Name: pricing_unit
+              Type: string
+            - Name: reservation_amortized_upfront_cost_for_usage
+              Type: double
+            - Name: reservation_amortized_upfront_fee_for_billing_period
+              Type: double
+            - Name: reservation_effective_cost
+              Type: double
+            - Name: reservation_end_time
+              Type: string
+            - Name: reservation_modification_status
+              Type: string
+            - Name: reservation_normalized_units_per_reservation
+              Type: string
+            - Name: reservation_number_of_reservations
+              Type: string
+            - Name: reservation_recurring_fee_for_usage
+              Type: double
+            - Name: reservation_start_time
+              Type: string
+            - Name: reservation_subscription_id
+              Type: string
+            - Name: reservation_total_reserved_normalized_units
+              Type: string
+            - Name: reservation_total_reserved_units
+              Type: string
+            - Name: reservation_units_per_reservation
+              Type: string
+            - Name: reservation_unused_amortized_upfront_fee_for_billing_period
+              Type: double
+            - Name: reservation_unused_normalized_unit_quantity
+              Type: double
+            - Name: reservation_unused_quantity
+              Type: double
+            - Name: reservation_unused_recurring_fee
+              Type: double
+            - Name: reservation_upfront_value
+              Type: double
+            - Name: savings_plan_total_commitment_to_date
+              Type: double
+            - Name: savings_plan_savings_plan_a_r_n
+              Type: string
+            - Name: savings_plan_savings_plan_rate
+              Type: double
+            - Name: savings_plan_used_commitment
+              Type: double
+            - Name: savings_plan_savings_plan_effective_cost
+              Type: double
+            - Name: savings_plan_amortized_upfront_commitment_for_billing_period
+              Type: double
+            - Name: savings_plan_recurring_commitment_for_billing_period
+              Type: double
+          Location: !Sub s3://${ReportBucketName}/${CurPrefix}/hive/
+          InputFormat: org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat
+          Compressed: false
+          NumberOfBuckets: -1
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+            Parameters:
+              serialization.format: "1"
+          BucketColumns: []
+          SortColumns: []
+          StoredAsSubDirectories: false
+        PartitionKeys:
+          - Name: year
+            Type: string
+          - Name: month
+            Type: string
+        TableType: EXTERNAL_TABLE
+
+  GlueDatabaseName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/config/${Stage}/${Branch}/${AppName}/glue_database_name"
+      Type: "String"
+      Value: !Sub awsbilling_${Branch}_${Stage}
+      Description: "Glue database name"
+
+  GlueTableName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/config/${Stage}/${Branch}/${AppName}/glue_table_name"
+      Type: "String"
+      Value: raw_cur_data
+      Description: "Glue table name"
