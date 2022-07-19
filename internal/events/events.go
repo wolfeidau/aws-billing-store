@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/wolfeidau/aws-billing-service/internal/events/s3created"
+	"github.com/wolfeidau/aws-billing-store/internal/events/s3created"
 )
 
 type AWSEvent struct {

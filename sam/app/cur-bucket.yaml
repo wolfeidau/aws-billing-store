@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "wolfeidau: aws billing cost and use report bucket"
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Application Name used to store configuration.
+  Stage:
+    Type: String
+    Description: The stage where the stack is running in, e.g., dev, prod.
+    Default: dev
+  Branch:
+    Type: String
+    Description: The branch the stack was deployed.
+    Default: master
+  ReportPrefix:
+    Type: String
+
+Outputs:
+  ReportBucket:
+    Value: !Ref ReportBucket
+
+Resources:
+  ReportBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ReportBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReportBucket
+      PolicyDocument:
+        Statement:
+          - Sid: ReportDeliveryBucketRead
+            Action:
+              - s3:GetBucketAcl
+              - s3:GetBucketPolicy
+            Effect: Allow
+            Principal:
+              Service: billingreports.amazonaws.com
+            Resource: !GetAtt ReportBucket.Arn
+          - Sid: ReportDeliveryObjectWrite
+            Action: s3:PutObject
+            Effect: Allow
+            Principal:
+              Service: billingreports.amazonaws.com
+            Resource: !Sub ${ReportBucket.Arn}/*
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:*
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${ReportBucket}/*
+              - Fn::Sub: arn:aws:s3:::${ReportBucket}
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  ReportBucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Fn::Sub: /config/${Stage}/${Branch}/${AppName}/report_bucket
+      Type: String
+      Value:
+        Ref: ReportBucket
+
+  ReportPrefixParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Fn::Sub: /config/${Stage}/${Branch}/${AppName}/report_prefix
+      Type: String
+      Value:
+        Ref: ReportPrefix

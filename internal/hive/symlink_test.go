@@ -27,7 +27,7 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 		ctx            context.Context
 		bucket         string
 		prefix         string
-		hivePartitions []string
+		hivePartitions map[string]string
 		symlinkKeys    []string
 	}
 	tests := []struct {
@@ -45,7 +45,7 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 				ctx:            context.TODO(),
 				bucket:         "test-bucket",
 				prefix:         "test-prefix",
-				hivePartitions: []string{"year=2022", "month=1"},
+				hivePartitions: map[string]string{"year": "2022", "month": "1"},
 				symlinkKeys: []string{
 					"parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00001.snappy.parquet",
 					"parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00002.snappy.parquet",

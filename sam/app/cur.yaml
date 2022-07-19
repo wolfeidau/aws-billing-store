@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "wolfeidau: aws billing cost and use report configuration in us-east-1"
+
+Parameters:
+  ReportBucketName:
+    Type: String
+  ReportPrefix:
+    Type: String
+    Default: cur
+  ReportBucketRegion:
+    Type: String
+
+Resources:
+  DailyAthenaReportDefinition:
+    Type: AWS::CUR::ReportDefinition
+    Properties:
+      AdditionalSchemaElements:
+        - RESOURCES
+      Compression: Parquet
+      Format: Parquet
+      RefreshClosedReports: true
+      ReportName: !Sub ${AWS::StackName}-athena-hourly
+      ReportVersioning: CREATE_NEW_REPORT
+      S3Bucket: !Ref ReportBucketName
+      S3Prefix: !Ref ReportPrefix
+      S3Region: !Ref ReportBucketRegion
+      TimeUnit: HOURLY
