@@ -18,7 +18,7 @@ bin/golangci-lint-${GOLANGCI_VERSION}:
 	@mv bin/golangci-lint $@
 
 .PHONY: deploy
-deploy: clean build archive deploy-cur-bucket deploy-cur deploy-symlink deploy-athena deploy-athena-workspace deploy-partitions
+deploy: clean build archive deploy-cur-bucket deploy-cur deploy-athena deploy-athena-workspace deploy-partitions
 
 .PHONY: lint
 lint: bin/golangci-lint
@@ -89,24 +89,6 @@ deploy-cur:
 		--stack-name $(APPNAME)-$(STAGE)-$(BRANCH)-cur-$(AWS_DEFAULT_REGION) \
 		--parameter-overrides AppName=$(APPNAME) Stage=$(STAGE) Branch=$(BRANCH) \
 			ReportBucketName=$(CUR_BUCKET_NAME) ReportBucketRegion=$(AWS_DEFAULT_REGION)
-
-.PHONY: deploy-symlink
-deploy-symlink:
-	@echo "--- deploy stack $(APPNAME)-$(STAGE)-$(BRANCH)-symlink"
-	$(eval SAM_BUCKET := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/deploy_bucket' --query 'Parameter.Value' --output text))
-	$(eval CUR_BUCKET_NAME := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/report_bucket' --query 'Parameter.Value' --output text))
-	$(eval CUR_PREFIX := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/report_prefix' --query 'Parameter.Value' --output text))
-
-	@$(DEPLOY_CMD) \
-		--no-fail-on-empty-changeset \
-		--template-file sam/app/symlink.yaml \
-		--capabilities CAPABILITY_IAM \
-		--s3-bucket $(SAM_BUCKET) \
-		--s3-prefix sam/$(GIT_HASH) \
-		--tags "environment=$(STAGE)" "branch=$(BRANCH)" "service=$(APPNAME)" \
-		--stack-name $(APPNAME)-$(STAGE)-$(BRANCH)-symlink \
-		--parameter-overrides AppName=$(APPNAME) Stage=$(STAGE) Branch=$(BRANCH) Commit=$(GIT_HASH) \
-			ReportBucketName=$(CUR_BUCKET_NAME) CurPrefix=$(CUR_PREFIX)
 
 .PHONY: deploy-athena-workspace
 deploy-athena-workspace:
