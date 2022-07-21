@@ -10,11 +10,7 @@ type Base struct {
 	Branch          string `help:"The git branch this code originated." env:"BRANCH"`
 }
 
-type Symlink struct {
-	Base
-}
-
-type Partitions struct {
+type Partition struct {
 	Base
 	Region      string `help:"The AWS region." env:"AWS_REGION"`
 	QueryBucket string `help:"The Bucket used for Athena query results." env:"QUERY_BUCKET"`

@@ -26,7 +26,6 @@ Parameters:
   QueryResultsBucketName:
     Type: String
 
-
 Conditions:
   IsDev: !Equals [!Ref Stage, "dev"]
   IsProd: !Equals [!Ref Stage, "prod"]
@@ -62,6 +61,8 @@ Resources:
           TABLE: !Ref GlueTable
           QUERY_BUCKET: !Ref QueryResultsBucketName
       Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ReportBucketName
         - S3ReadPolicy:
             BucketName: !Ref QueryResultsBucketName
         - S3WritePolicy:
@@ -78,7 +79,7 @@ Resources:
                 - "glue:BatchCreatePartition"
                 - "glue:GetTable"
                 - "glue:GetDatabase"
-              Resource: "*"    
+              Resource: "*"
       Events:
         S3EventRule:
           Type: EventBridgeRule
@@ -94,4 +95,4 @@ Resources:
                     - !Ref ReportBucketName
                 object:
                   key:
-                    - prefix: !Sub "${CurPrefix}/hive"
+                    - prefix: !Ref CurPrefix

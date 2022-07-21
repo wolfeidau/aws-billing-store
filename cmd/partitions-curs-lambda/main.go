@@ -18,7 +18,7 @@ var (
 	// assigned during build time with -ldflags
 	commit = "unknown"
 
-	cli flags.Partitions
+	cli flags.Partition
 )
 
 func main() {
@@ -34,7 +34,12 @@ func main() {
 		}).Msg("startup")
 	}
 
-	h, err := partitions.NewHandler(context.Background(), cli)
+	pman, err := partitions.NewManager(cli.QueryBucket, cli.Region, cli.Database, cli.Table)
+	if err != nil {
+		log.Fatal().Err(err).Msg("partitions manager failed")
+	}
+
+	h, err := partitions.NewHandler(context.Background(), pman)
 	if err != nil {
 		log.Fatal().Err(err).Msg("handler setup failed")
 	}

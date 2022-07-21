@@ -1,6 +1,6 @@
 # aws-billing-store
 
-This project deploys an automated CUR ingestion which updates an Athena table setup to enable querying of the latest snapshots for each month. This is an alternative to the pre configured athena setup provided by the Billing Team and is more suited to customers with 10s or 100s of CUR files provided in each report.
+This project automates setup of Cost and Usage Reports (CUR) in a billing account with an Athena table enabling querying of the latest data for each month. This is an alternative to the pre configured athena setup provided by the Billing Team and is more suited to customers with 10s or 100s of CUR files provided in each report.
 
 # Overview
 
@@ -34,10 +34,9 @@ This will deploy the following components:
 
 1. Setup a bucket for the CUR in the region you configured via `AWS_DEFAULT_REGION`.
 2. Create a CUR in the billing service.
-3. Deploy the lambda which creates the hive directory containing symlinks to the latest CUR.
-4. Deploy the Glue database and table used by Athena.
-5. Deploy the Athena workspace with an encrypted secure S3 bucket for artifacts.
-6. Deploy the template which creates partitions in Athena based on files created in the hive directory.
+3. Deploy the Glue database and table used by Athena.
+4. Deploy the Athena workspace with an encrypted secure S3 bucket for artifacts.
+5. Deploy the template which manages hive symlinks and partitions in Athena when new reports arrive.
 
 # What Next? 
 
