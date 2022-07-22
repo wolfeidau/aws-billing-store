@@ -4,11 +4,24 @@ This project automates setup of Cost and Usage Reports (CUR) in a billing accoun
 
 # Overview
 
+In summary this project deploys:
+
+1. Creates the CUR in the billing service and the bucket which receives the reports.
+2. Configures a Glue Database and Table for use by Athena.
+3. Deploys a lambda to manage the partitions using eventbridge S3 events.
+
+Once deployed all you need to do is wait till AWS pushes the first report to the solution, this can take up to 8 hours in my experience, then you should be able to log into Athena and start querying the data.
+
+![Solution Diagram](docs/images/2022-07-02_cur_managment_diagram.png)
+
+# Why?
+
 The goal of this project is to provide a consistent view of cost and usage reports (CUR) at all times in a Athena table. To do this we use hive symlinks, which are updated each time a new snapshot arrives providing an atomic single file update for new CURs. This is different to the status table provided by AWS Billing team in the pre configured Athena setup.
 
 # How It Works
 
 When you enable the option to keep all versions of the CUR, AWS will upload a new snapshot then once complete update the manifest containing a list of file paths for that billing period. We use an s3 file create event to trigger reading of that manifest and creation of a symlink in the hive directory we maintain in the same bucket. This provides Athena with a partitioned structure to query without worrying about CUR files being updated while it is reading them.
+
 
 # Prerequisites
 
