@@ -51,6 +51,24 @@ This will deploy the following components:
 4. Deploy the Athena workspace with an encrypted secure S3 bucket for artifacts.
 5. Deploy the template which manages hive symlinks and partitions in Athena when new reports arrive.
 
+## Cost Allocation Tags
+
+The [Cost Allocation Tags](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html) in billing allows you to record data which is included in the CUR. This is a great resource for attributing cost to a user, role or service, or alternatively a cloudformation stack. 
+
+I enable the following AWS tags for collection and inclusion in the CUR.
+
+* `aws:cloudformation:stack-name`
+* `aws:createdBy`
+
+I also enable some of my own custom tags for collection and inclusion in the CUR.
+
+* `application`
+* `component`
+* `branch`
+* `environment`
+
+You can see how these are added in the `Makefile` when the stacks are launched, the tags assigned to the cloudformation stacks are mostly propagated to the resources which they create.
+
 # What Next? 
 
 There are some great resources with queries which provide insights from your CUR data, one of the best is [Level 300: AWS CUR Query Library](https://wellarchitectedlabs.com/cost/300_labs/300_cur_queries/) from the [The Well-Architected Labs website](https://wellarchitectedlabs.com/).
