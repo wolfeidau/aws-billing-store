@@ -260,6 +260,16 @@ Resources:
               Type: double
             - Name: savings_plan_recurring_commitment_for_billing_period
               Type: double
+            - Name: resource_tags_aws_cloudformation_stack_name
+              Type: string
+            - Name: resource_tags_aws_created_by
+              Type: string
+            - Name: resource_tags_user_application
+              Type: string
+            - Name: resource_tags_user_branch
+              Type: string
+            - Name: resource_tags_user_environment
+              Type: string
           Location: !Sub s3://${ReportBucketName}/${CurPrefix}/hive/
           InputFormat: org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat
           OutputFormat: org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat
