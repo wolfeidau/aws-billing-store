@@ -91,9 +91,12 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		return nil, err
 	}
 
+	year := fmt.Sprintf("%d", startDate.Year())
+	month := fmt.Sprintf("%d", startDate.Month())
+
 	hivePartitions := hive.HivePartitions{
-		"year":  fmt.Sprintf("%d", startDate.Year()),
-		"month": fmt.Sprintf("%d", startDate.Month()),
+		{Key: "year", Value: year},
+		{Key: "month", Value: month},
 	}
 
 	keys := make([]string, len(manifest.ReportKeys))
@@ -107,7 +110,7 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		return nil, err
 	}
 
-	err = h.pman.CreatePartition(ctx, hivePartitions["year"], hivePartitions["month"])
+	err = h.pman.CreatePartition(ctx, year, month)
 	if err != nil {
 		return nil, err
 	}

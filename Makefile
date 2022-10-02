@@ -32,7 +32,7 @@ test:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOAMD64=v2 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/ ./cmd/...
+	CGO_ENABLED=0 GOAMD64=v2 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/ ./cmd/...
 
 .PHONY: clean
 clean:
