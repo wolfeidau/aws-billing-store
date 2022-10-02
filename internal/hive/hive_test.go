@@ -19,16 +19,16 @@ func TestParsePathString(t *testing.T) {
 			name: "should parse valid path",
 			args: args{path: "hive/year=2020/month=1/symlink.txt"},
 			want: HivePartitions{
-				"year":  "2020",
-				"month": "1",
+				{Key: "year", Value: "2020"},
+				{Key: "month", Value: "1"},
 			},
 		},
 		{
 			name: "should parse valid path",
 			args: args{path: "hive/year=2020/month=1/symlink.txt"},
 			want: HivePartitions{
-				"year":  "2020",
-				"month": "1",
+				{Key: "year", Value: "2020"},
+				{Key: "month", Value: "1"},
 			},
 		},
 	}
@@ -48,7 +48,10 @@ func TestHivePartitions_PathString(t *testing.T) {
 	}{
 		{
 			name: "should build valid path",
-			hv:   HivePartitions{"year": "2022", "month": "1"},
+			hv: HivePartitions{
+				{Key: "year", Value: "2022"},
+				{Key: "month", Value: "1"},
+			},
 			want: "year=2022/month=1",
 		},
 	}

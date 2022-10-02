@@ -27,7 +27,7 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 		ctx            context.Context
 		bucket         string
 		prefix         string
-		hivePartitions map[string]string
+		hivePartitions HivePartitions
 		symlinkKeys    []string
 	}
 	tests := []struct {
@@ -42,10 +42,13 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 		{
 			name: "should create symlink with valid input",
 			args: args{
-				ctx:            context.TODO(),
-				bucket:         "test-bucket",
-				prefix:         "test-prefix",
-				hivePartitions: map[string]string{"year": "2022", "month": "1"},
+				ctx:    context.TODO(),
+				bucket: "test-bucket",
+				prefix: "test-prefix",
+				hivePartitions: HivePartitions{
+					{Key: "year", Value: "2022"},
+					{Key: "month", Value: "1"},
+				},
 				symlinkKeys: []string{
 					"parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00001.snappy.parquet",
 					"parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00002.snappy.parquet",
