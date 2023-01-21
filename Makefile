@@ -2,7 +2,7 @@ APPNAME := aws-billing
 STAGE ?= dev
 BRANCH ?= master
 
-GOLANGCI_VERSION = v1.47.0
+GOLANGCI_VERSION = v1.49.0
 
 GIT_HASH := $(shell git rev-parse --short HEAD)
 
@@ -32,7 +32,7 @@ test:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOAMD64=v2 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/ ./cmd/...
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/partitions-curs-lambda/bootstrap ./cmd/partitions-curs-lambda
 
 .PHONY: clean
 clean:
@@ -41,7 +41,7 @@ clean:
 .PHONY: archive
 archive:
 	@echo "--- build an archive"
-	@cd dist && zip -X -9 ./handler.zip *-lambda
+	@cd dist/partitions-curs-lambda && zip -X -9 ../partitions-curs-lambda-handler.zip bootstrap
 
 .PHONY: deploy-bucket
 deploy-bucket:

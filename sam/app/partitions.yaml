@@ -32,7 +32,9 @@ Conditions:
 
 Globals:
   Function:
-    Runtime: go1.x
+    Runtime: provided.al2
+    Architectures:
+      - arm64
     Timeout: 30
     MemorySize: 256
     Environment:
@@ -53,8 +55,8 @@ Resources:
   PartitionsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../dist/handler.zip
-      Handler: partitions-curs-lambda
+      CodeUri: ../../dist/partitions-curs-lambda-handler.zip
+      Handler: bootstrap
       Environment:
         Variables:
           DATABASE: !Ref GlueDatabase
