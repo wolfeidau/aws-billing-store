@@ -2,7 +2,7 @@ APPNAME := aws-billing
 STAGE ?= dev
 BRANCH ?= master
 
-GOLANGCI_VERSION = v1.49.0
+GOLANGCI_VERSION = v1.52.0
 
 GIT_HASH := $(shell git rev-parse --short HEAD)
 
