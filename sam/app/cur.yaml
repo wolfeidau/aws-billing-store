@@ -9,6 +9,19 @@ Parameters:
     Default: cur
   ReportBucketRegion:
     Type: String
+  ReportCompression:
+    Type: String
+    Default: Parquet
+    AllowedValues:
+      - ZIP
+      - GZIP
+      - Parquet
+  ReportFormat:
+    Type: String
+    Default: Parquet
+    AllowedValues:
+      - textORcsv
+      - Parquet
 
 Resources:
   DailyAthenaReportDefinition:
@@ -16,8 +29,8 @@ Resources:
     Properties:
       AdditionalSchemaElements:
         - RESOURCES
-      Compression: Parquet
-      Format: Parquet
+      Compression: !Ref ReportCompression
+      Format: !Ref ReportFormat
       RefreshClosedReports: true
       ReportName: !Sub ${AWS::StackName}-athena-hourly
       ReportVersioning: CREATE_NEW_REPORT
