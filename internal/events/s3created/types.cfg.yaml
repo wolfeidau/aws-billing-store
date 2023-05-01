@@ -1,6 +1,6 @@
 package: s3created
 generate:
-  types: true
+  models: true
 output: create-object-types.gen.go
 output-options:
   skip-prune: true
