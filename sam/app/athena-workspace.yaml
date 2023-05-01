@@ -20,7 +20,7 @@ Parameters:
   ObjectExpirationInDays:
     Type: Number
     Default: 14
-
+  
 Outputs:
   AthenaWorkGroupName:
     Value: !Sub ${AppName}-${Branch}-${Stage}-workgroup
@@ -40,6 +40,8 @@ Resources:
         BytesScannedCutoffPerQuery: 10000000
         EnforceWorkGroupConfiguration: true
         PublishCloudWatchMetricsEnabled: true
+        EngineVersion:
+          SelectedEngineVersion: "Athena engine version 3"
         ResultConfiguration:
           EncryptionConfiguration:
             EncryptionOption: SSE_S3
