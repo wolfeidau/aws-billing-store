@@ -20,7 +20,7 @@ Parameters:
   ObjectExpirationInDays:
     Type: Number
     Default: 14
-  
+
 Outputs:
   AthenaWorkGroupName:
     Value: !Sub ${AppName}-${Branch}-${Stage}-workgroup
@@ -28,7 +28,7 @@ Outputs:
 
   QueryResultsBucketName:
     Description: "Athena query results bucket name"
-    Value: !Ref QueryResultsBucketName
+    Value: !Ref QueryResultsBucket
 
 Resources:
   AthenaWorkGroup:

@@ -62,6 +62,12 @@ Resources:
               Type: timestamp
             - Name: bill_billing_period_end_date
               Type: timestamp
+            - Name: discount_edp_discount
+              Type: double
+            - Name: discount_private_rate_discount
+              Type: double
+            - Name: discount_total_discount
+              Type: double
             - Name: line_item_usage_account_id
               Type: string
             - Name: line_item_line_item_type
@@ -96,17 +102,25 @@ Resources:
               Type: string
             - Name: line_item_blended_cost
               Type: double
+            - Name: line_item_net_unblended_cost
+              Type: double
             - Name: line_item_line_item_description
               Type: string
             - Name: line_item_tax_type
               Type: string
             - Name: line_item_legal_entity
               Type: string
+            - Name: product_bundle_description
+              Type: string
             - Name: product_product_name
               Type: string
             - Name: product_alarm_type
               Type: string
             - Name: product_availability
+              Type: string
+            - Name: product_availability_zone
+              Type: string
+            - Name: product_capacitystatus
               Type: string
             - Name: product_ci_type
               Type: string
@@ -132,6 +146,14 @@ Resources:
               Type: string
             - Name: product_group_description
               Type: string
+            - Name: product_instance_type
+              Type: string
+            - Name: product_instance_type_family
+              Type: string
+            - Name: product_instance_family
+              Type: string
+            - Name: product_bundle
+              Type: string
             - Name: product_location
               Type: string
             - Name: product_location_type
@@ -143,6 +165,12 @@ Resources:
             - Name: product_message_delivery_order
               Type: string
             - Name: product_operation
+              Type: string
+            - Name: product_operating_system
+              Type: string
+            - Name: product_physical_processor
+              Type: string
+            - Name: product_pre_installed_sw
               Type: string
             - Name: product_platopricingtype
               Type: string
@@ -162,6 +190,8 @@ Resources:
               Type: string
             - Name: product_request_type
               Type: string
+            - Name: product_resource_type
+              Type: string
             - Name: product_routing_target
               Type: string
             - Name: product_routing_type
@@ -171,6 +201,8 @@ Resources:
             - Name: product_servicename
               Type: string
             - Name: product_sku
+              Type: string
+            - Name: product_storage
               Type: string
             - Name: product_storage_class
               Type: string
@@ -190,9 +222,13 @@ Resources:
               Type: string
             - Name: product_usagetype
               Type: string
+            - Name: product_uservolume
+              Type: string
             - Name: product_version
               Type: string
             - Name: product_volume_type
+              Type: string
+            - Name: product_volume_api_name
               Type: string
             - Name: pricing_rate_code
               Type: string
@@ -246,6 +282,8 @@ Resources:
               Type: double
             - Name: reservation_upfront_value
               Type: double
+            - Name: reservation_net_effective_cost
+              Type: double
             - Name: savings_plan_total_commitment_to_date
               Type: double
             - Name: savings_plan_savings_plan_a_r_n
@@ -262,6 +300,8 @@ Resources:
               Type: double
             - Name: resource_tags_aws_cloudformation_stack_name
               Type: string
+            - Name: savings_plan_net_savings_plan_effective_cost
+              Type: double
             - Name: resource_tags_aws_created_by
               Type: string
             - Name: resource_tags_user_application
@@ -269,6 +309,8 @@ Resources:
             - Name: resource_tags_user_branch
               Type: string
             - Name: resource_tags_user_environment
+              Type: string
+            - Name: resource_tags_user_cost_center
               Type: string
           Location: !Sub s3://${ReportBucketName}/${CurPrefix}/hive/
           InputFormat: org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat
