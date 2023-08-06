@@ -2,8 +2,6 @@ APPNAME := aws-billing
 STAGE ?= dev
 BRANCH ?= master
 
-GOLANGCI_VERSION = v1.52.0
-
 GIT_HASH := $(shell git rev-parse --short HEAD)
 
 DEPLOY_CMD = sam deploy
@@ -11,19 +9,8 @@ DEPLOY_CMD = sam deploy
 .PHONY: ci
 ci: lint test build
 
-bin/golangci-lint: bin/golangci-lint-${GOLANGCI_VERSION}
-	@ln -sf golangci-lint-${GOLANGCI_VERSION} bin/golangci-lint
-bin/golangci-lint-${GOLANGCI_VERSION}:
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s $(GOLANGCI_VERSION)
-	@mv bin/golangci-lint $@
-
 .PHONY: deploy
 deploy: clean build archive deploy-cur-bucket deploy-cur deploy-athena deploy-athena-workspace deploy-partitions
-
-.PHONY: lint
-lint: bin/golangci-lint
-	@echo "--- lint all the things"
-	@bin/golangci-lint run
 
 .PHONY: test
 test:
