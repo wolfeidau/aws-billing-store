@@ -31,13 +31,13 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 		symlinkKeys    []string
 	}
 	tests := []struct {
-		name          string
-		args          args
-		wantBucket    string
-		wantKey       string
-		wantBody      string
-		wantPutObject *s3.PutObjectOutput
-		wantErr       bool
+		name                   string
+		args                   args
+		wantBucket             string
+		wantKey                string
+		wantBody               string
+		wantStoreSymlinkResult *StoreSymlinkResult
+		wantErr                bool
 	}{
 		{
 			name: "should create symlink with valid input",
@@ -54,11 +54,11 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 					"parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00002.snappy.parquet",
 				},
 			},
-			wantBucket:    "test-bucket",
-			wantKey:       "test-prefix/hive/year=2022/month=1/symlink.txt",
-			wantBody:      "parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00001.snappy.parquet\nparquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00002.snappy.parquet",
-			wantPutObject: &s3.PutObjectOutput{},
-			wantErr:       false,
+			wantBucket:             "test-bucket",
+			wantKey:                "test-prefix/hive/year=2022/month=1/symlink.txt",
+			wantBody:               "parquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00001.snappy.parquet\nparquet/test-managment-cur/20220401-20220501/20220503T120125Z/test-managment-cur-00002.snappy.parquet",
+			wantStoreSymlinkResult: &StoreSymlinkResult{Bucket: "test-bucket", Key: "test-prefix/hive/year=2022/month=1/symlink.txt", ChecksumSHA256: ""},
+			wantErr:                false,
 		},
 	}
 	for _, tt := range tests {
@@ -85,7 +85,7 @@ func TestSymlinkGenerator_StoreSymlink(t *testing.T) {
 				assert.Error(err)
 			}
 
-			assert.Equal(tt.wantPutObject, got)
+			assert.Equal(tt.wantStoreSymlinkResult, got)
 		})
 	}
 }
