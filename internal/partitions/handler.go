@@ -3,7 +3,6 @@ package partitions
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
@@ -14,10 +13,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
 	"github.com/wolfeidau/aws-billing-store/internal/cur"
-	"github.com/wolfeidau/aws-billing-store/internal/events"
-	"github.com/wolfeidau/aws-billing-store/internal/events/s3created"
 	"github.com/wolfeidau/aws-billing-store/internal/hive"
 )
+
+type S3ObjectCreated struct {
+	Bucket    string `json:"bucket"`
+	Key       string `json:"key"`
+	ETag      string `json:"etag"`
+	Requester string `json:"requester"`
+}
 
 type partitionEvent struct {
 	Account        string              `json:"account"`
@@ -53,39 +57,24 @@ func NewHandler(ctx context.Context, pman *Manager) (*Handler, error) {
 	}, nil
 }
 
-func (h *Handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
-
-	event, err := events.ParseEvent(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	switch v := event.Detail.(type) {
-	case *s3created.ObjectCreated:
-		return h.processCreated(ctx, v)
-	}
-
-	return nil, errors.New("failed to process event, unknown type")
-}
-
-func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectCreated) ([]byte, error) {
+func (h *Handler) Handler(ctx context.Context, created S3ObjectCreated) (*S3ObjectCreated, error) {
 
 	// does the key match the manifest path structure
-	manifestPeriod, ok := cur.ParseManifestPath(created.Object.Key)
+	manifestPeriod, ok := cur.ParseManifestPath(created.Key)
 	if !ok {
-		log.Ctx(ctx).Info().Str("object", created.Object.Key).Msg("skipped file as it is not a manifest")
-		return []byte(`{"msg": "skipped"}`), nil
+		log.Ctx(ctx).Info().Str("object", created.Key).Msg("skipped file as it is not a manifest")
+		return &created, nil
 	}
 
 	// at the moment we skip snapshot manifests
 	if manifestPeriod.Snapshot != "" {
-		log.Ctx(ctx).Info().Str("object", created.Object.Key).Msg("skipped file as it is a snapshot manifest")
-		return []byte(`{"msg": "skipped"}`), nil
+		log.Ctx(ctx).Info().Str("object", created.Key).Msg("skipped file as it is a snapshot manifest")
+		return &created, nil
 	}
 
 	res, err := h.s3client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(created.Bucket.Name),
-		Key:    aws.String(created.Object.Key),
+		Bucket: aws.String(created.Bucket),
+		Key:    aws.String(created.Key),
 	})
 	if err != nil {
 		return nil, err
@@ -118,10 +107,10 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 	keys := make([]string, len(manifest.ReportKeys))
 
 	for i, reportKey := range manifest.ReportKeys {
-		keys[i] = fmt.Sprintf("s3://%s/%s", created.Bucket.Name, reportKey)
+		keys[i] = fmt.Sprintf("s3://%s/%s", created.Bucket, reportKey)
 	}
 
-	storeRes, err := h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, keys)
+	storeRes, err := h.sgen.StoreSymlink(ctx, created.Bucket, manifestPeriod.Prefix, hivePartitions, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +126,7 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		AssemblyID:     manifest.AssemblyID,
 		BillingPeriod:  manifest.BillingPeriod,
 		ReportKeys:     keys,
-		Manifest:       fmt.Sprintf("s3://%s/%s", created.Bucket.Name, created.Object.Key),
+		Manifest:       fmt.Sprintf("s3://%s/%s", created.Bucket, created.Key),
 		Symlink:        fmt.Sprintf("s3://%s/%s", storeRes.Bucket, storeRes.Key),
 	}
 
@@ -162,5 +151,5 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		return nil, err
 	}
 
-	return []byte(`{"msg": "ok"}`), nil
+	return &created, nil
 }
