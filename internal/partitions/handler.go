@@ -2,12 +2,15 @@ package partitions
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchevents"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchevents/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
 	"github.com/wolfeidau/aws-billing-store/internal/cur"
@@ -16,10 +19,21 @@ import (
 	"github.com/wolfeidau/aws-billing-store/internal/hive"
 )
 
+type partitionEvent struct {
+	Account        string              `json:"account"`
+	AssemblyID     string              `json:"assembly_id"`
+	BillingPeriod  *cur.BillingPeriod  `json:"billing_period"`
+	HivePartitions hive.HivePartitions `json:"hive_partitions"`
+	ReportKeys     []string            `json:"report_keys"`
+	Manifest       string              `json:"manifest"`
+	Symlink        string              `json:"symlink"`
+}
+
 type Handler struct {
-	s3client *s3.Client
-	sgen     *hive.SymlinkGenerator
-	pman     *Manager
+	s3client     *s3.Client
+	eventsclient *cloudwatchevents.Client
+	sgen         *hive.SymlinkGenerator
+	pman         *Manager
 }
 
 func NewHandler(ctx context.Context, pman *Manager) (*Handler, error) {
@@ -29,11 +43,13 @@ func NewHandler(ctx context.Context, pman *Manager) (*Handler, error) {
 	}
 
 	s3client := s3.NewFromConfig(config)
+	eventsclient := cloudwatchevents.NewFromConfig(config)
 
 	return &Handler{
-		s3client: s3client,
-		sgen:     hive.NewSymlinkGenerator(s3client),
-		pman:     pman,
+		s3client:     s3client,
+		eventsclient: eventsclient,
+		sgen:         hive.NewSymlinkGenerator(s3client),
+		pman:         pman,
 	}, nil
 }
 
@@ -105,12 +121,43 @@ func (h *Handler) processCreated(ctx context.Context, created *s3created.ObjectC
 		keys[i] = fmt.Sprintf("s3://%s/%s", created.Bucket.Name, reportKey)
 	}
 
-	_, err = h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, keys)
+	storeRes, err := h.sgen.StoreSymlink(ctx, created.Bucket.Name, manifestPeriod.Prefix, hivePartitions, keys)
 	if err != nil {
 		return nil, err
 	}
 
 	err = h.pman.CreatePartition(ctx, year, month)
+	if err != nil {
+		return nil, err
+	}
+
+	pe := partitionEvent{
+		HivePartitions: hivePartitions,
+		Account:        manifest.Account,
+		AssemblyID:     manifest.AssemblyID,
+		BillingPeriod:  manifest.BillingPeriod,
+		ReportKeys:     keys,
+		Manifest:       fmt.Sprintf("s3://%s/%s", created.Bucket.Name, created.Object.Key),
+		Symlink:        fmt.Sprintf("s3://%s/%s", storeRes.Bucket, storeRes.Key),
+	}
+
+	log.Ctx(ctx).Info().Fields(map[string]any{"partitionEvent": pe}).Msg("publish event")
+
+	data, err := json.Marshal(pe)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = h.eventsclient.PutEvents(ctx, &cloudwatchevents.PutEventsInput{
+		Entries: []types.PutEventsRequestEntry{
+			{
+				Detail:     aws.String(string(data)),
+				DetailType: aws.String("Partition Created"),
+				Resources:  []string{manifest.AssemblyID},
+				Source:     aws.String("aws-billing-store"),
+			},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -63,6 +63,8 @@ Resources:
           TABLE: !Ref GlueTable
           QUERY_BUCKET: !Ref QueryResultsBucketName
       Policies:
+        - EventBridgePutEventsPolicy:
+           EventBusName: default
         - S3CrudPolicy:
             BucketName: !Ref ReportBucketName
         - S3ReadPolicy:

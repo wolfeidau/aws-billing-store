@@ -6,8 +6,8 @@ import (
 )
 
 type HivePartition struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type HivePartitions []HivePartition
