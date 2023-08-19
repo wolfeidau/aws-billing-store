@@ -46,6 +46,40 @@ Globals:
         RAW_EVENT_LOGGING: !If [IsDev, "true", "false"]
 
 Resources:
+  ReportS3EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "ReportS3EventRule"
+      EventPattern:
+        source:
+          - "aws.s3"
+        "detail-type":
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref ReportBucketName
+          object:
+            key:
+              - prefix: !Ref CurPrefix
+              - suffix: !Sub 01/${ReportBucketName}-Manifest.json
+      Targets:
+        - Arn: !GetAtt PartitionsFunction.Arn
+          InputTransformer:
+            InputPathsMap:
+                "bucket": "$.detail.bucket.name"
+                "key": "$.detail.object.key"
+                "etag": "$.detail.object.etag"
+                "requester": "$.detail.requester"
+            InputTemplate: >
+              {
+                "bucket": "<bucket>",
+                "key": "<key>",
+                "etag": "<etag>",
+                "requester": "<requester>"
+              }
+          Id: !Sub "PartitionsFunction-${Stage}-${Branch}"
+
   PartitionsFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -84,19 +118,12 @@ Resources:
                 - "glue:GetTable"
                 - "glue:GetDatabase"
               Resource: "*"
-      Events:
-        S3EventRule:
-          Type: EventBridgeRule
-          Properties:
-            Pattern:
-              source:
-                - "aws.s3"
-              "detail-type":
-                - "Object Created"
-              detail:
-                bucket:
-                  name:
-                    - !Ref ReportBucketName
-                object:
-                  key:
-                    - prefix: !Ref CurPrefix
+
+  PartitionsFunctionS3EventRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: PartitionsFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ReportS3EventRule.Arn

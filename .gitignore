@@ -6,3 +6,4 @@
 /assets/node_modules
 /internal/website/app/bundle.js
 /data
+/*.json
