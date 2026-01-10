@@ -12,11 +12,9 @@ import (
 	drv "github.com/uber/athenadriver/go"
 )
 
-var (
-	parts = template.Must(template.New("partition").
-		Parse(`ALTER TABLE {{ .Table }} ADD IF NOT EXISTS
+var parts = template.Must(template.New("partition").
+	Parse(`ALTER TABLE {{ .Table }} ADD IF NOT EXISTS
 PARTITION (year=?, month=?)`))
-)
 
 type params struct {
 	Table string
@@ -29,7 +27,11 @@ type Manager struct {
 }
 
 func NewManager(queryBucket, region, database, table string) (*Manager, error) {
-	os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+	err := os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+	if err != nil {
+		return nil, err
+	}
+
 	conf, err := drv.NewDefaultConfig(
 		fmt.Sprintf("s3://%s/results", queryBucket),
 		region,
@@ -46,7 +48,6 @@ func NewManager(queryBucket, region, database, table string) (*Manager, error) {
 }
 
 func (m *Manager) CreatePartition(ctx context.Context, year, month string) error {
-
 	query, err := buildQuery(m.table)
 	if err != nil {
 		return err
