@@ -25,6 +25,9 @@ Parameters:
     Type: String
   QueryResultsBucketName:
     Type: String
+  AthenaWorkGroupName:
+    Type: String
+    Description: The name of the Athena workgroup for query execution
 
 Conditions:
   IsDev: !Equals [!Ref Stage, "dev"]
@@ -98,7 +101,7 @@ Resources:
           QUERY_BUCKET: !Ref QueryResultsBucketName
       Policies:
         - EventBridgePutEventsPolicy:
-           EventBusName: default
+            EventBusName: default
         - S3CrudPolicy:
             BucketName: !Ref ReportBucketName
         - S3ReadPolicy:
@@ -107,17 +110,37 @@ Resources:
             BucketName: !Ref QueryResultsBucketName
         - Version: "2012-10-17"
           Statement:
+            # Athena workgroup permissions for query execution and status
             - Effect: Allow
               Action:
                 - "athena:StartQueryExecution"
                 - "athena:GetQueryExecution"
                 - "athena:GetQueryResults"
                 - "athena:GetWorkGroup"
+              Resource:
+                - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkGroupName}"
+            # Athena data catalog permissions for metadata access
+            - Effect: Allow
+              Action:
                 - "athena:GetDatabase"
-                - "glue:BatchCreatePartition"
-                - "glue:GetTable"
+              Resource:
+                - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:datacatalog/AwsDataCatalog"
+            # Glue database permissions
+            - Effect: Allow
+              Action:
                 - "glue:GetDatabase"
-              Resource: "*"
+              Resource:
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueDatabase}"
+            # Glue table permissions for partition management
+            - Effect: Allow
+              Action:
+                - "glue:GetTable"
+                - "glue:BatchCreatePartition"
+              Resource:
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueDatabase}"
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueDatabase}/${GlueTable}"
 
   PartitionsFunctionS3EventRulePermission:
     Type: AWS::Lambda::Permission
