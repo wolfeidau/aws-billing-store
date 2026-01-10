@@ -9,7 +9,7 @@ Parameters:
 
   Stage:
     Type: String
-    Description: The stage where the stac is running in, e.g., dev, prod.
+    Description: The stage where the stack is running in, e.g., dev, prod.
     Default: dev
 
   Branch:
@@ -20,6 +20,11 @@ Parameters:
   ObjectExpirationInDays:
     Type: Number
     Default: 14
+
+  BytesScannedCutoffPerQuery:
+    Type: Number
+    Default: 1000000000
+    Description: Maximum bytes scanned per query (default 1GB). Set to 0 to disable.
 
 Outputs:
   AthenaWorkGroupName:
@@ -35,9 +40,18 @@ Resources:
     Type: AWS::Athena::WorkGroup
     Properties:
       Name: !Sub ${AppName}-${Branch}-${Stage}-workgroup
-      Description: Stax Work Group
+      Description: Work Group
+      Tags:
+        - Key: environment
+          Value: !Ref Stage
+        - Key: branch
+          Value: !Ref Branch
+        - Key: service
+          Value: !Ref AppName
+        - Key: resource-type
+          Value: athena-workgroup
       WorkGroupConfiguration:
-        BytesScannedCutoffPerQuery: 10000000
+        BytesScannedCutoffPerQuery: !Ref BytesScannedCutoffPerQuery
         EnforceWorkGroupConfiguration: true
         PublishCloudWatchMetricsEnabled: true
         EngineVersion:

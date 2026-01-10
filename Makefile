@@ -9,6 +9,13 @@ DEPLOY_CMD = sam deploy
 .PHONY: ci
 ci: lint test build
 
+.PHONY: lint
+lint:
+	@echo "--- linting go code"
+	@golangci-lint run ./...
+	@echo "--- linting cloudformation templates"
+	@cfn-lint sam/app/*.yaml
+
 .PHONY: deploy
 deploy: clean build archive deploy-cur-bucket deploy-cur deploy-athena deploy-athena-workspace deploy-partitions
 
@@ -119,6 +126,7 @@ deploy-partitions:
 	$(eval QUERY_RESULTS_BUCKET_NAME := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/athena_query_results_bucketname' --query 'Parameter.Value' --output text))
 	$(eval GLUE_DATABASE_NAME := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/glue_database_name' --query 'Parameter.Value' --output text))
 	$(eval GLUE_TABLE_NAME := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/glue_table_name' --query 'Parameter.Value' --output text))
+	$(eval ATHENA_WORKGROUP_NAME := $(shell aws ssm get-parameter --name '/config/$(STAGE)/$(BRANCH)/$(APPNAME)/athena_workgroup_name' --query 'Parameter.Value' --output text))
 	@$(DEPLOY_CMD) \
 		--no-fail-on-empty-changeset \
 		--template-file sam/app/partitions.yaml \
@@ -132,4 +140,5 @@ deploy-partitions:
 			CurPrefix=$(CUR_PREFIX) \
 			QueryResultsBucketName=$(QUERY_RESULTS_BUCKET_NAME) \
 			GlueDatabase=$(GLUE_DATABASE_NAME) \
-			GlueTable=$(GLUE_TABLE_NAME)
+			GlueTable=$(GLUE_TABLE_NAME) \
+			AthenaWorkGroupName=$(ATHENA_WORKGROUP_NAME)
