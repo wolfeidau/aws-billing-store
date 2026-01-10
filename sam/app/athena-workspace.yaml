@@ -41,6 +41,15 @@ Resources:
     Properties:
       Name: !Sub ${AppName}-${Branch}-${Stage}-workgroup
       Description: Work Group
+      Tags:
+        - Key: environment
+          Value: !Ref Stage
+        - Key: branch
+          Value: !Ref Branch
+        - Key: service
+          Value: !Ref AppName
+        - Key: resource-type
+          Value: athena-workgroup
       WorkGroupConfiguration:
         BytesScannedCutoffPerQuery: !Ref BytesScannedCutoffPerQuery
         EnforceWorkGroupConfiguration: true
