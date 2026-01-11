@@ -3,75 +3,112 @@ package partitions
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
-	"os"
 	"text/template"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/athena"
+	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/rs/zerolog/log"
-	drv "github.com/uber/athenadriver/go"
 )
 
 var parts = template.Must(template.New("partition").
 	Parse(`ALTER TABLE {{ .Table }} ADD IF NOT EXISTS
-PARTITION (year=?, month=?)`))
+    PARTITION (year = '{{ .Year }}', month = '{{ .Month }}')`))
 
 type params struct {
 	Table string
+	Year  string
+	Month string
 }
 
 type Manager struct {
-	conf     *drv.Config
-	database string
-	table    string
+	athenaClient        *athena.Client
+	database            string
+	table               string
+	queryBucket         string
+	athenaWorkGroupName string
 }
 
-func NewManager(queryBucket, region, database, table string) (*Manager, error) {
-	err := os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+func NewManager(queryBucket, region, database, table, athenaWorkGroupName string) (*Manager, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
 		return nil, err
 	}
 
-	conf, err := drv.NewDefaultConfig(
-		fmt.Sprintf("s3://%s/results", queryBucket),
-		region,
-		drv.DummyAccessID,
-		drv.DummySecretAccessKey,
-	)
-	if err != nil {
-		return nil, err
-	}
+	athenaClient := athena.NewFromConfig(cfg)
 
-	conf.SetDB(database)
-
-	return &Manager{conf: conf, database: database, table: table}, nil
+	return &Manager{
+		athenaClient:        athenaClient,
+		database:            database,
+		table:               table,
+		queryBucket:         queryBucket,
+		athenaWorkGroupName: athenaWorkGroupName,
+	}, nil
 }
 
 func (m *Manager) CreatePartition(ctx context.Context, year, month string) error {
-	query, err := buildQuery(m.table)
+	query, err := buildQuery(m.table, year, month)
 	if err != nil {
 		return err
 	}
 
-	db, err := sql.Open(drv.DriverName, m.conf.Stringify())
+	outputLocation := fmt.Sprintf("s3://%s", m.queryBucket)
+
+	input := &athena.StartQueryExecutionInput{
+		QueryString: aws.String(query),
+		WorkGroup:   aws.String(m.athenaWorkGroupName),
+		QueryExecutionContext: &types.QueryExecutionContext{
+			Database: aws.String(m.database),
+		},
+		ResultConfiguration: &types.ResultConfiguration{
+			OutputLocation: aws.String(outputLocation),
+		},
+	}
+
+	log.Ctx(ctx).Info().Str("query", query).Str("outputLocation", outputLocation).Msg("run query")
+
+	result, err := m.athenaClient.StartQueryExecution(ctx, input)
 	if err != nil {
 		return err
 	}
 
-	log.Ctx(ctx).Info().Str("query", query).Msg("run query")
+	// Wait for query execution to complete
+	for {
+		status, err := m.athenaClient.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+			QueryExecutionId: result.QueryExecutionId,
+		})
+		if err != nil {
+			return err
+		}
 
-	_, err = db.Query(query, year, month)
-	if err != nil {
-		return err
+		switch status.QueryExecution.Status.State {
+		case types.QueryExecutionStateSucceeded:
+			log.Ctx(ctx).Info().Str("QueryExecutionId", aws.ToString(status.QueryExecution.QueryExecutionId)).Msg("query execution succeeded")
+			return nil
+		case types.QueryExecutionStateCancelled:
+			log.Ctx(ctx).Info().Str("QueryExecutionId", aws.ToString(status.QueryExecution.QueryExecutionId)).Msg("query execution cancelled")
+			return fmt.Errorf("athena query execution cancelled: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
+		case types.QueryExecutionStateFailed:
+			return fmt.Errorf("athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
+		}
+
+		select {
+		case <-time.After(time.Second):
+			// Time to retry
+		case <-ctx.Done():
+			// If the context was cancelled, cancel the running query
+			return fmt.Errorf("context cancelled: %w", ctx.Err())
+		}
 	}
-
-	return nil
 }
 
-func buildQuery(table string) (string, error) {
+func buildQuery(table string, year, month string) (string, error) {
 	buf := new(bytes.Buffer)
 
-	err := parts.Execute(buf, &params{Table: table})
+	err := parts.Execute(buf, &params{Table: table, Year: year, Month: month})
 	if err != nil {
 		return "", err
 	}

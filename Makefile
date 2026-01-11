@@ -26,7 +26,7 @@ test:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -o dist/partitions-curs-lambda/bootstrap ./cmd/partitions-curs-lambda
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.commit=$(GIT_HASH)" -trimpath -o dist/partitions-curs-lambda/bootstrap ./cmd/partitions-curs-lambda
 
 .PHONY: clean
 clean:
