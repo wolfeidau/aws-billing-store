@@ -108,23 +108,22 @@ Resources:
             BucketName: !Ref QueryResultsBucketName
         - S3WritePolicy:
             BucketName: !Ref QueryResultsBucketName
+        - AthenaQueryPolicy:
+            WorkGroupName: !Ref AthenaWorkGroupName
         - Version: "2012-10-17"
           Statement:
-            # Athena workgroup permissions for query execution and status
+            # Allow athena to start query execution
             - Effect: Allow
               Action:
                 - "athena:StartQueryExecution"
                 - "athena:GetQueryExecution"
                 - "athena:GetQueryResults"
                 - "athena:GetWorkGroup"
-              Resource:
-                - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkGroupName}"
-            # Athena data catalog permissions for metadata access
-            - Effect: Allow
-              Action:
                 - "athena:GetDatabase"
-              Resource:
-                - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:datacatalog/AwsDataCatalog"
+                - "glue:BatchCreatePartition"
+                - "glue:GetTable"
+                - "glue:GetDatabase"
+              Resource: "*"
             # Glue database permissions
             - Effect: Allow
               Action:
