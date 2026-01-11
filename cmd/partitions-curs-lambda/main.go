@@ -25,7 +25,7 @@ func main() {
 
 	flds := lmw.FieldMap{"commit": commit}
 
-	pman, err := partitions.NewManager(cli.QueryBucket, cli.Region, cli.Database, cli.Table)
+	pman, err := partitions.NewManager(cli.QueryBucket, cli.Region, cli.Database, cli.Table, cli.AthenaWorkGroupName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("partitions manager failed")
 	}

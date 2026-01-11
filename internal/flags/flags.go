@@ -12,8 +12,9 @@ type Base struct {
 
 type Partition struct {
 	Base
-	Region      string `help:"The AWS region." env:"AWS_REGION"`
-	QueryBucket string `help:"The Bucket used for Athena query results." env:"QUERY_BUCKET"`
-	Database    string `help:"The Athena database name." env:"DATABASE"`
-	Table       string `help:"The Athena table name." env:"TABLE"`
+	Region              string `help:"The AWS region." env:"AWS_REGION"`
+	QueryBucket         string `help:"The Bucket used for Athena query results." env:"QUERY_BUCKET"`
+	Database            string `help:"The Athena database name." env:"DATABASE"`
+	Table               string `help:"The Athena table name." env:"TABLE"`
+	AthenaWorkGroupName string `help:"The Athena workgroup name." env:"ATHENA_WORKGROUP_NAME"`
 }

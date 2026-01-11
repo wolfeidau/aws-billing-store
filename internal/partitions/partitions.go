@@ -25,13 +25,14 @@ type params struct {
 }
 
 type Manager struct {
-	athenaClient *athena.Client
-	database     string
-	table        string
-	queryBucket  string
+	athenaClient        *athena.Client
+	database            string
+	table               string
+	queryBucket         string
+	athenaWorkGroupName string
 }
 
-func NewManager(queryBucket, region, database, table string) (*Manager, error) {
+func NewManager(queryBucket, region, database, table, athenaWorkGroupName string) (*Manager, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
 		return nil, err
@@ -39,7 +40,13 @@ func NewManager(queryBucket, region, database, table string) (*Manager, error) {
 
 	athenaClient := athena.NewFromConfig(cfg)
 
-	return &Manager{athenaClient: athenaClient, database: database, table: table, queryBucket: queryBucket}, nil
+	return &Manager{
+		athenaClient:        athenaClient,
+		database:            database,
+		table:               table,
+		queryBucket:         queryBucket,
+		athenaWorkGroupName: athenaWorkGroupName,
+	}, nil
 }
 
 func (m *Manager) CreatePartition(ctx context.Context, year, month string) error {
@@ -52,6 +59,7 @@ func (m *Manager) CreatePartition(ctx context.Context, year, month string) error
 
 	input := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(query),
+		WorkGroup:   aws.String(m.athenaWorkGroupName),
 		QueryExecutionContext: &types.QueryExecutionContext{
 			Database: aws.String(m.database),
 		},
@@ -82,9 +90,9 @@ func (m *Manager) CreatePartition(ctx context.Context, year, month string) error
 			return nil
 		case types.QueryExecutionStateCancelled:
 			log.Ctx(ctx).Info().Str("QueryExecutionId", aws.ToString(status.QueryExecution.QueryExecutionId)).Msg("query execution cancelled")
-			return fmt.Errorf("Athena query execution cancelled")
+			return fmt.Errorf("athena query execution cancelled: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
 		case types.QueryExecutionStateFailed:
-			return fmt.Errorf("Athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
+			return fmt.Errorf("athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
 		}
 
 		select {
@@ -92,7 +100,7 @@ func (m *Manager) CreatePartition(ctx context.Context, year, month string) error
 			// Time to retry
 		case <-ctx.Done():
 			// If the context was cancelled, cancel the running query
-			return ctx.Err()
+			return fmt.Errorf("context cancelled: %w", ctx.Err())
 		}
 	}
 }

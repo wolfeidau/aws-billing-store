@@ -99,6 +99,7 @@ Resources:
           DATABASE: !Ref GlueDatabase
           TABLE: !Ref GlueTable
           QUERY_BUCKET: !Ref QueryResultsBucketName
+          ATHENA_WORKGROUP_NAME: !Ref AthenaWorkGroupName
       Policies:
         - EventBridgePutEventsPolicy:
             EventBusName: default
@@ -112,18 +113,6 @@ Resources:
             WorkGroupName: !Ref AthenaWorkGroupName
         - Version: "2012-10-17"
           Statement:
-            # Allow athena to start query execution
-            - Effect: Allow
-              Action:
-                - "athena:StartQueryExecution"
-                - "athena:GetQueryExecution"
-                - "athena:GetQueryResults"
-                - "athena:GetWorkGroup"
-                - "athena:GetDatabase"
-                - "glue:BatchCreatePartition"
-                - "glue:GetTable"
-                - "glue:GetDatabase"
-              Resource: "*"
             # Glue database permissions
             - Effect: Allow
               Action:
